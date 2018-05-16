@@ -14,7 +14,7 @@ import java.util.Set;
  * @author songjianlong
  *
  */
-public class TCPNioService extends TCPNioBase {
+public class NioTcpService extends NioTcpBase {
 
 	public static void main(String[] args) throws Exception {
 		try(ServerSocketChannel ssc = ServerSocketChannel.open();

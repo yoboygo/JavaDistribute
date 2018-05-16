@@ -15,7 +15,7 @@ import java.util.Calendar;
  * @author songjianlong
  *
  */
-public class TCPBioClient extends TCPBioBase{
+public class BioTcpClient extends BioTcpBase{
 
 	public static void main(String[] args) throws UnknownHostException, IOException, InterruptedException {
 		try(Socket socket = new Socket(SERVER_IP,SERVER_PORT);

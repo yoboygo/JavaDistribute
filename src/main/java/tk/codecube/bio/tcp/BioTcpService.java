@@ -14,7 +14,7 @@ import java.nio.charset.Charset;
  * @author songjianlong
  *
  */
-public class TCPBioService extends TCPBioBase{
+public class BioTcpService extends BioTcpBase{
 	
 	public static void main(String[] args) throws IOException {
 		
