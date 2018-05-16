@@ -2,9 +2,12 @@ package tk.codecube.nio.tcp;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
+import java.util.Set;
+
 
 
 /**
@@ -19,7 +22,7 @@ public class TCPNioClient extends TCPNioBase{
 		try(SocketChannel socketChannel = SocketChannel.open();){
 			//设置为非阻塞模式
 			socketChannel.configureBlocking(false);
-			InetSocketAddress socketAddress = InetSocketAddress.createUnresolved(SERVER_IP, SERVER_PORT);
+			InetSocketAddress socketAddress = new InetSocketAddress(SERVER_IP,SERVER_PORT);
 			socketChannel.connect(socketAddress);
 			Selector selector = Selector.open();
 			//向channle注册selector以及感兴趣的连接事件
@@ -27,10 +30,64 @@ public class TCPNioClient extends TCPNioBase{
 			//阻塞至有感兴趣的IO事发生，或到达超时时间，如果希望一直等至有感兴趣的IO事件发生
 			//可调用无参的select方法，如果希望不阻塞直接返回目前是否有感兴趣的事件发生，可调用
 			//selectNow方法
+			System.out.println("Client 启动监听...");
 			int nKeys = selector.select();
-			SelectionKey skey = null;
-			if(){
-				
+			SelectionKey sKey = null;
+			if(nKeys > 0){
+				Set<SelectionKey> keys = selector.selectedKeys();
+				for(SelectionKey key : keys){
+					//对于发生连接的事件
+					if(key.isConnectable()){
+						System.out.println("client建立连接...");
+						SocketChannel sc = (SocketChannel) key.channel();
+						sc.configureBlocking(false);
+						//注册感兴趣的IO事件发生，通常不直接注册写事件，在发送缓冲区未满的情况下，一直是可写的，因此如注册了写
+						//事件，而又不写数据，很容易造成CPU消耗100%现象
+						sKey = sc.register(selector,SelectionKey.OP_READ);
+						//完成连接的建立
+						sc.finishConnect();
+					}else if(key.isReadable()){//有流可以读
+						System.out.println("client读取字节流...");
+						ByteBuffer buffe = ByteBuffer.allocate(1024);
+						SocketChannel sc = (SocketChannel) key.channel();
+						//TODO read byte
+						int readBytes = 0;
+						try{
+							int ret = 0;
+							try{
+								//读取目前可读的流，sc.read返回的为成功复制到bytebuffer中的字节数，此步骤为阻塞操作，值为0；
+								//当已经是流的结尾时，返回-1
+								while((ret = sc.read(buffe)) > 0){
+									readBytes += ret;
+								}
+							}finally {
+								buffe.flip();
+							}
+						}finally{
+							if(buffe != null){
+								buffe.clear();
+							}
+						}
+					}else if(key.isWritable()){//可写入流
+						System.out.println("client写入字节流...");
+						//取消OP_WRITE事件的注册
+						key.interestOps(key.interestOps() & (~SelectionKey.OP_WRITE));
+						SocketChannel sc = (SocketChannel) key.channel();
+						//次步为阻塞操作，直到写入操作系统发送缓冲区或网络IO出现异常，返回的为成功写入的字节数，
+						//当操作系统的发送缓冲区已满，此处会返回0
+						int writtenedSize = sc.write(ByteBuffer.wrap("注册了写入流事件，欢迎欢迎！".getBytes()));
+						//如未写入，则继续注册感兴趣的OP_WRITE
+						if(writtenedSize == 0){
+							key.interestOps(key.interestOps() | SelectionKey.OP_WRITE);
+						}
+					}
+				}
+				selector.selectedKeys().clear();
+			}
+			//对于要写入的流，可直接调用channel.write来完成，只有写入未成功时才注册OP_WRITE事件
+			int wSize = socketChannel.write(ByteBuffer.wrap("直接写入".getBytes()));
+			if(wSize == 0){
+//				key.interestOps(key.interestOps() | SelectionKey.OP_WRITE);
 			}
 		}
 	}
