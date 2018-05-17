@@ -79,6 +79,7 @@ public class NioTcpClient extends NioTcpBase{
 								System.out.println("Client 接收到数据：" + response);
 								String datas = "你好，我是Client " + Calendar.getInstance().getTimeInMillis();
 								sc.write(ByteBuffer.wrap(datas.getBytes(Charset.forName("UTF-8"))));
+								//一定要将当前key remove掉，然后重新注册，否则不能重复调用
 								item.remove();
 								sc.register(selector, SelectionKey.OP_READ);
 							}finally{
