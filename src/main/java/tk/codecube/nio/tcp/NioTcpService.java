@@ -51,6 +51,8 @@ public class NioTcpService extends NioTcpBase {
 								channel.configureBlocking(false);
 								channel.finishConnect();
 								item.remove();
+								String ret = "我是Server,现在已经完成连接!";
+								channel.write(ByteBuffer.wrap(ret.getBytes(Charset.forName("UTF-8"))));
 								//注册可读事件
 								channel.register(selector, SelectionKey.OP_READ);
 							} catch (Exception e) {
